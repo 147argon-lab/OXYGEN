@@ -1,0 +1,275 @@
+
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>報價系統（實驗室設備優先）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#f6f7fb; }
+    .card { background:#fff; border-radius:14px; box-shadow:0 10px 28px rgba(15,23,42,.08); }
+    .tbl th, .tbl td { border-bottom:1px solid #e5e7eb; padding:8px; vertical-align:middle; }
+    .mono { font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }
+  </style>
+</head>
+<body class="p-4 sm:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- 第一項：實驗室設備 -->
+    <div class="card p-4 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold">實驗室設備</h2>
+        <div class="text-sm text-slate-500">尺：長度(公分)/30；米：長度(公尺)；set：單價×數量；尾段 +12%</div>
+      </div>
+
+      <div class="flex items-center gap-2 mb-3">
+        <button id="addRow" class="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">＋新增一列</button>
+        <button id="clearRows" class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200">清空</button>
+      </div>
+
+      <div class="overflow-auto">
+        <table class="tbl w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="text-left w-[24%]">項目(下拉)</th>
+              <th class="text-left w-[18%]">規格/備註</th>
+              <th class="text-right w-[10%]">長度</th>
+              <th class="text-right w-[10%]">數量</th>
+              <th class="text-center w-[8%]">單位</th>
+              <th class="text-right w-[12%]">單價</th>
+              <th class="text-right w-[12%]">小計</th>
+              <th class="text-center w-[8%]">長度單位</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="body"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5"></td>
+              <td class="text-right font-medium">小計(貨品)</td>
+              <td class="text-right"><span id="subSum" class="mono">0</span></td>
+              <td colspan="2"></td>
+            </tr>
+            <tr>
+              <td colspan="5"></td>
+              <td class="text-right font-medium">工資及運費(12%)</td>
+              <td class="text-right"><span id="fee12" class="mono">0</span></td>
+              <td colspan="2"></td>
+            </tr>
+            <tr>
+              <td colspan="5"></td>
+              <td class="text-right font-semibold">總計</td>
+              <td class="text-right font-semibold"><span id="grand" class="mono">0</span></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- 第二項：隔間工程 -->
+    <div class="card p-4 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold">隔間工程（庫板/門）</h2>
+        <div class="text-sm text-slate-500">面材：m²×2250；收邊鋁料：m²×100；工資運費：m²×600</div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div class="border rounded-lg p-3">
+          <div class="text-slate-600 mb-1">天板（m²）</div>
+          <div class="flex items-center gap-2">
+            <input id="ceil_m2" type="number" step="0.01" class="w-40 border rounded-lg px-2 py-1 mono" />
+            <div class="text-slate-500 text-sm">單價</div>
+            <div class="mono">NT$ 2250</div>
+          </div>
+        </div>
+        <div class="border rounded-lg p-3">
+          <div class="text-slate-600 mb-1">立板（m²）</div>
+          <div class="flex items-center gap-2">
+            <input id="wall_m2" type="number" step="0.01" class="w-40 border rounded-lg px-2 py-1 mono" />
+            <div class="text-slate-500 text-sm">單價</div>
+            <div class="mono">NT$ 2250</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-slate-600">門（可新增多個）</div>
+        <div id="door_list" class="mt-2"></div>
+        <button id="addDoor" class="mt-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">＋新增門</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="border rounded-lg p-3">
+          <div class="text-slate-600 mb-1">收邊鋁料（按天板+立板 m²，<span class="mono">NT$ 100/m²</span>）</div>
+          <div class="text-slate-500 text-sm">自動依面積計算</div>
+        </div>
+        <div class="border rounded-lg p-3">
+          <div class="text-slate-600 mb-1">工資運費（按天板+立板 m²，<span class="mono">NT$ 600/m²</span>）</div>
+          <div class="text-slate-500 text-sm">自動依面積計算</div>
+        </div>
+      </div>
+
+      <div class="mt-4 border-t pt-3">
+        <div class="flex flex-col gap-1 items-end">
+          <div>面積小計（天板+立板）：<span id="m2Sum" class="mono">0</span> m²</div>
+          <div>面材小計：<span id="panelSum" class="mono">NT$ 0</span></div>
+          <div>門小計：<span id="doorSum" class="mono">NT$ 0</span></div>
+          <div>收邊鋁料：<span id="edgeSum" class="mono">NT$ 0</span></div>
+          <div>工資運費：<span id="laborSum" class="mono">NT$ 0</span></div>
+          <div class="text-lg font-semibold">隔間工程 總計：<span id="partitionGrand" class="mono">NT$ 0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 全頁總計 -->
+    <div class="card p-4 sm:p-6">
+      <div class="flex items-center justify-between">
+        <div class="text-lg font-semibold">整頁總計（實驗室設備 + 隔間工程）</div>
+        <div class="text-2xl font-bold"><span id="pageGrand" class="mono">NT$ 0</span></div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+const DOORS = [{"name": "單開門 900W×2100H（內拉把手）", "unit": "set", "price": 25000}, {"name": "單開手拉門 900W×2100H", "unit": "set", "price": 21000}, {"name": "單開門 2000W×2500H", "unit": "set", "price": 49500}, {"name": "單開門 1800W×2100H", "unit": "set", "price": 43000}, {"name": "單開門 1800W×2100H（附磁鎖）", "unit": "set", "price": 52000}, {"name": "單開子母手拉門 900+900W×2100H", "unit": "set", "price": 28000}, {"name": "單開雙移拉門 1200+1200W×2100H", "unit": "set", "price": 65000}, {"name": "活動鋁梯 3000W×2700H", "unit": "set", "price": 7500}];
+const ITEMS = [{"name": "木製邊桌 每一尺 4200", "unit": "尺", "price": 4200, "byLen": true, "lenUnit": "尺"}, {"name": "木製中央桌 每一尺 8400", "unit": "尺", "price": 8400, "byLen": true, "lenUnit": "尺"}, {"name": "W1000-木製轉角桌 20500", "unit": "set", "price": 20500, "byLen": false, "lenUnit": ""}, {"name": "PP水槽+三頸龍頭 12000", "unit": "set", "price": 12000, "byLen": false, "lenUnit": ""}, {"name": "鋼製邊桌 每一尺 9200", "unit": "尺", "price": 9200, "byLen": true, "lenUnit": "尺"}, {"name": "鋼製邊桌 每一尺 18400", "unit": "尺", "price": 18400, "byLen": true, "lenUnit": "尺"}, {"name": "W1000-鋼製轉角桌45000", "unit": "set", "price": 45000, "byLen": false, "lenUnit": ""}, {"name": "W900-PP抽氣式藥品櫃-層板型 58000", "unit": "set", "price": 58000, "byLen": false, "lenUnit": ""}, {"name": "W1200-PP抽氣式藥品櫃-層板型 68000", "unit": "set", "price": 68000, "byLen": false, "lenUnit": ""}, {"name": "2100鋼製排煙櫃 130000", "unit": "set", "price": 130000, "byLen": false, "lenUnit": ""}, {"name": "2100PP排煙櫃 175000", "unit": "set", "price": 175000, "byLen": false, "lenUnit": ""}, {"name": "1800鋼製排煙櫃 120000", "unit": "set", "price": 120000, "byLen": false, "lenUnit": ""}, {"name": "1800PP排煙櫃 148000", "unit": "set", "price": 148000, "byLen": false, "lenUnit": ""}, {"name": "1500鋼製排煙櫃 108000", "unit": "set", "price": 108000, "byLen": false, "lenUnit": ""}, {"name": "1500PP排煙櫃 135000", "unit": "set", "price": 135000, "byLen": false, "lenUnit": ""}, {"name": "1200鋼製排煙櫃 99000", "unit": "set", "price": 99000, "byLen": false, "lenUnit": ""}, {"name": "1200PP排煙櫃 125000", "unit": "set", "price": 125000, "byLen": false, "lenUnit": ""}, {"name": "鋼製線槽 每一米 1500", "unit": "米", "price": 1500, "byLen": true, "lenUnit": "米"}, {"name": "W1200抽氣式鋼瓶櫃 58000", "unit": "set", "price": 58000, "byLen": false, "lenUnit": ""}, {"name": "SUS緊急沖淋房 88000", "unit": "set", "price": 88000, "byLen": false, "lenUnit": ""}, {"name": "SUS緊急沖淋25000", "unit": "set", "price": 25000, "byLen": false, "lenUnit": ""}, {"name": "桌上緊急衝眼器 4600", "unit": "set", "price": 4600, "byLen": false, "lenUnit": ""}, {"name": "110V及220V插座配置 1set 750", "unit": "set", "price": 750, "byLen": false, "lenUnit": ""}, {"name": "其他(自填)", "unit": "", "price": 0, "byLen": false, "lenUnit": ""}];
+
+function money(n){ if(!n||isNaN(n)) return "NT$ 0"; return "NT$ "+Number(n).toLocaleString("zh-TW", {maximumFractionDigits:0}); }
+
+// ====== 實驗室設備（尺/米換算） ======
+function makeSelect(){ const sel=document.createElement('select'); sel.className="w-full border rounded-lg px-2 py-1"; ITEMS.forEach(i=>{ const o=document.createElement('option'); o.value=i.name; o.textContent=i.name; sel.appendChild(o); }); return sel; }
+function makeInputNumber(step="1"){ const ip=document.createElement('input'); ip.type='number'; ip.step=step; ip.className="w-full border rounded-lg text-right px-2 py-1 mono"; return ip; }
+function makeInputText(){ const ip=document.createElement('input'); ip.type='text'; ip.className="w-full border rounded-lg px-2 py-1"; return ip; }
+function td(n){ const td=document.createElement('td'); td.appendChild(n); return td; }
+
+function rowTemplate(){
+  const tr=document.createElement('tr');
+  const sel=makeSelect(), spec=makeInputText(), len=makeInputNumber("0.01"), qty=makeInputNumber("1");
+  const unit=document.createElement('div'); unit.className="text-center";
+  const price=makeInputNumber("1"); price.readOnly=true;
+  const sub=document.createElement('div'); sub.className="text-right mono";
+  const lenU=document.createElement('div'); lenU.className="text-center text-slate-500";
+  const del=document.createElement('button'); del.textContent="刪除"; del.className="px-2 py-1 bg-slate-100 rounded hover:bg-rose-100";
+
+  tr.appendChild(td(sel)); tr.appendChild(td(spec)); tr.appendChild(td(len)); tr.appendChild(td(qty));
+  tr.appendChild(td(unit)); tr.appendChild(td(price)); tr.appendChild(td(sub)); tr.appendChild(td(lenU));
+  const tdel=document.createElement('td'); tdel.appendChild(del); tr.appendChild(tdel);
+
+  function applyItem(name){
+    const it = ITEMS.find(x=>x.name===name) || {unit:"", price:0, byLen:false, lenUnit:""};
+    unit.textContent = (name==="其他(自填)") ? "" : it.unit;
+    price.value = (name==="其他(自填)") ? 0 : it.price;
+    lenU.textContent = (name==="其他(自填)") ? "" : (it.lenUnit||"");
+    len.disabled = !(it.byLen);
+    if(!it.byLen) len.value = "";
+    computeItems();
+  }
+  sel.onchange=()=>applyItem(sel.value);
+  len.oninput = qty.oninput = price.oninput = ()=>{ computeItems(); };
+  del.onclick = ()=>{ tr.remove(); computeItems(); };
+
+  applyItem(sel.value);
+  return tr;
+}
+
+function computeItems(){
+  let sum=0;
+  document.querySelectorAll('#body tr').forEach(tr=>{
+    const name=tr.children[0].querySelector('select').value;
+    const price=Number(tr.children[5].querySelector('input').value||0);
+    const qty=Number(tr.children[3].querySelector('input').value||0);
+    const it = ITEMS.find(x=>x.name===name) || {byLen:false,lenUnit:""};
+    let v=0;
+    if(name==="其他(自填)"){
+      v = price * qty;
+    }else if(it.byLen){
+      const L = Number(tr.children[2].querySelector('input').value||0);
+      if(it.lenUnit==="尺"){ v = price * (L/30) * qty; }  // 長度(公分)/30 = 尺
+      else if(it.lenUnit==="米"){ v = price * L * qty; }  // 長度=公尺
+      else{ v = price * L * qty; }
+    }else{
+      v = price * qty;
+    }
+    sum+=v;
+    tr.children[6].querySelector('div').textContent = money(v);
+  });
+  const fee=Math.round(sum*0.12), grand=sum+fee;
+  document.getElementById('subSum').textContent = sum.toLocaleString('zh-TW');
+  document.getElementById('fee12').textContent = fee.toLocaleString('zh-TW');
+  document.getElementById('grand').textContent = grand.toLocaleString('zh-TW');
+  computePageGrand();
+}
+
+document.getElementById('addRow').onclick=()=>{ const tr=rowTemplate(); document.getElementById('body').appendChild(tr); computeItems(); };
+document.getElementById('clearRows').onclick=()=>{ document.getElementById('body').innerHTML=""; computeItems(); };
+
+// ====== 隔間工程（庫板/門） ======
+function addDoorRow(){
+  const wrap = document.getElementById('door_list');
+  const line = document.createElement('div');
+  line.className="flex items-center gap-2 mb-2";
+  const sel = document.createElement('select'); sel.className="border rounded-lg px-2 py-1";
+  DOORS.forEach(d=>{ const opt=document.createElement('option'); opt.value=d.name; opt.textContent=d.name; sel.appendChild(opt); });
+  const price=document.createElement('input'); price.type='number'; price.readOnly=true; price.className="w-28 border rounded-lg px-2 py-1 text-right mono";
+  const qty=document.createElement('input'); qty.type='number'; qty.step='1'; qty.className="w-24 border rounded-lg px-2 py-1 text-right mono";
+  const sub=document.createElement('div'); sub.className="w-32 text-right mono";
+  const del=document.createElement('button'); del.textContent="刪除"; del.className="px-2 py-1 rounded bg-slate-100 hover:bg-rose-100";
+
+  function apply(){ const it=DOORS.find(x=>x.name===sel.value); price.value=it?it.price:0; computePartition(); }
+  sel.onchange=apply; qty.oninput=computePartition; del.onclick=()=>{ line.remove(); computePartition(); };
+
+  line.appendChild(sel);
+  line.appendChild(document.createTextNode(' 單價')); line.appendChild(price);
+  line.appendChild(document.createTextNode(' 扇數')); line.appendChild(qty);
+  line.appendChild(document.createTextNode(' 小計')); line.appendChild(sub);
+  line.appendChild(del);
+  wrap.appendChild(line);
+  apply();
+}
+
+function computePartition(){
+  const ceil = Number(document.getElementById('ceil_m2').value||0);
+  const wall = Number(document.getElementById('wall_m2').value||0);
+  const m2 = ceil + wall;
+  document.getElementById('m2Sum').textContent = m2.toFixed(2);
+  const panelSum = Math.round(m2 * 2250);
+  document.getElementById('panelSum').textContent = money(panelSum);
+
+  let doorSum = 0;
+  document.querySelectorAll('#door_list > div').forEach(line=>{
+    const price = Number(line.querySelector('input[type=number]').value||0);
+    const q = Number(line.querySelectorAll('input[type=number]')[1].value||0);
+    const v = price*q; doorSum+=v; line.querySelector('.mono').textContent = money(v);
+  });
+  document.getElementById('doorSum').textContent = money(doorSum);
+
+  const edge = Math.round(m2 * 100);
+  const labor = Math.round(m2 * 600);
+  document.getElementById('edgeSum').textContent = money(edge);
+  document.getElementById('laborSum').textContent = money(labor);
+
+  const total = panelSum + doorSum + edge + labor;
+  document.getElementById('partitionGrand').textContent = money(total);
+  computePageGrand();
+}
+document.getElementById('ceil_m2').oninput=computePartition;
+document.getElementById('wall_m2').oninput=computePartition;
+document.getElementById('addDoor').onclick=addDoorRow;
+
+// ====== 整頁總計 ======
+function computePageGrand(){
+  const part = Number((document.getElementById('partitionGrand').textContent||"").replace(/[^0-9]/g,""))||0;
+  const items = Number((document.getElementById('grand').textContent||"").replace(/[^0-9]/g,""))||0;
+  const g = part + items;
+  document.getElementById('pageGrand').textContent = "NT$ " + g.toLocaleString('zh-TW');
+}
+
+// 初始
+document.getElementById('addRow').click();
+document.getElementById('addDoor').click();
+</script>
+</body>
+</html>
